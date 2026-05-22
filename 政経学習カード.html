@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>政治経済 単語カード学習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --card-bg: #1c2333;
+    --border: #30363d;
+    --accent: #e8c840;
+    --accent2: #4fc3f7;
+    --wrong: #f85149;
+    --correct: #3fb950;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #484f58;
+    --serif: 'Noto Serif JP', serif;
+    --sans: 'Noto Sans JP', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .logo {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+
+  .logo span { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; display: block; letter-spacing: 0.1em; }
+
+  .score-badge {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .score-badge strong { color: var(--accent); font-size: 1.2rem; font-family: var(--serif); }
+
+  /* TABS */
+  .tabs-wrapper {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    overflow-x: auto;
+    display: flex;
+    gap: 0;
+    scrollbar-width: none;
+  }
+  .tabs-wrapper::-webkit-scrollbar { display: none; }
+
+  .tab {
+    padding: 14px 20px;
+    font-size: 0.8rem;
+    font-family: var(--sans);
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .wrong-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--wrong);
+    border-radius: 50%;
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+
+  /* MAIN LAYOUT */
+  .main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  /* SECTION HEADER */
+  .section-header {
+    margin-bottom: 28px;
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .section-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+  .wrong-count {
+    display: inline-block;
+    background: rgba(248, 81, 73, 0.15);
+    border: 1px solid rgba(248, 81, 73, 0.4);
+    color: var(--wrong);
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 20px;
+    margin-left: 10px;
+    font-weight: 500;
+  }
+
+  /* MODE BUTTONS */
+  .mode-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .mode-btn {
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text-muted);
+    transition: all 0.2s;
+    font-family: var(--sans);
+  }
+  .mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mode-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+  .mode-btn.danger { border-color: rgba(248,81,73,0.4); color: var(--wrong); }
+  .mode-btn.danger:hover { background: rgba(248,81,73,0.15); }
+
+  /* FLASHCARD GRID */
+  .cards-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  /* FLASHCARD */
+  .flashcard {
+    perspective: 1200px;
+    height: 130px;
+    cursor: pointer;
+    animation: fadeIn 0.3s ease forwards;
+    opacity: 0;
+  }
+  .flashcard:nth-child(1) { animation-delay: 0.02s; }
+  .flashcard:nth-child(2) { animation-delay: 0.04s; }
+  .flashcard:nth-child(3) { animation-delay: 0.06s; }
+  .flashcard:nth-child(4) { animation-delay: 0.08s; }
+  .flashcard:nth-child(5) { animation-delay: 0.10s; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .flashcard.tall { height: 160px; }
+
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+    position: relative;
+  }
+  .flashcard.flipped .card-inner { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 20px 24px;
+    gap: 16px;
+  }
+  .card-front {
+    background: var(--card-bg);
+  }
+  .card-back {
+    background: linear-gradient(135deg, #1a2332 0%, #1c2b3a 100%);
+    border-color: rgba(79, 195, 247, 0.3);
+    transform: rotateY(180deg);
+  }
+
+  .card-num {
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--text-dim);
+    min-width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .card-question {
+    flex: 1;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: var(--text-muted);
+  }
+
+  .card-hint {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  .card-answer-wrap {
+    flex: 1;
+    text-align: center;
+  }
+
+  .card-answer {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent2);
+    line-height: 1.4;
+  }
+
+  .card-answer.small { font-size: 1.05rem; }
+  .card-answer.xsmall { font-size: 0.9rem; }
+
+  .card-flip-hint {
+    position: absolute;
+    bottom: 10px;
+    right: 14px;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .wrong-badge {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    font-size: 0.65rem;
+    background: rgba(248,81,73,0.2);
+    color: var(--wrong);
+    border: 1px solid rgba(248,81,73,0.35);
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+
+  /* QUIZ MODE */
+  .quiz-container {
+    display: none;
+  }
+  .quiz-container.active {
+    display: block;
+  }
+  .quiz-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px 36px;
+    margin-bottom: 20px;
+    animation: fadeIn 0.4s ease forwards;
+  }
+  .quiz-progress {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .progress-bar-wrap {
+    flex: 1;
+    margin: 0 16px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .quiz-q-num {
+    font-family: var(--serif);
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .quiz-question {
+    font-size: 1rem;
+    line-height: 1.75;
+    color: var(--text);
+    margin-bottom: 28px;
+  }
+  .quiz-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .quiz-opt {
+    padding: 14px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    line-height: 1.4;
+  }
+  .quiz-opt:hover { border-color: var(--accent); background: rgba(232,200,64,0.06); }
+  .quiz-opt.correct { border-color: var(--correct); background: rgba(63,185,80,0.12); color: var(--correct); pointer-events: none; }
+  .quiz-opt.wrong { border-color: var(--wrong); background: rgba(248,81,73,0.1); color: var(--wrong); pointer-events: none; }
+  .quiz-opt.reveal { border-color: var(--correct); background: rgba(63,185,80,0.08); pointer-events: none; }
+  .quiz-opt.disabled { pointer-events: none; opacity: 0.4; }
+
+  .quiz-next-btn {
+    display: none;
+    margin-top: 20px;
+    padding: 12px 32px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: transform 0.1s;
+  }
+  .quiz-next-btn:hover { transform: translateY(-1px); }
+  .quiz-next-btn.visible { display: inline-block; }
+
+  .quiz-result {
+    text-align: center;
+    padding: 60px 20px;
+    animation: fadeIn 0.4s ease;
+  }
+  .result-score {
+    font-family: var(--serif);
+    font-size: 5rem;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .result-label { color: var(--text-muted); font-size: 1rem; margin: 10px 0 30px; }
+  .result-sub { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px; }
+  .result-retry {
+    padding: 12px 32px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+
+  /* WRONG ONLY FILTER */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .filter-label { font-size: 0.78rem; color: var(--text-muted); }
+  .filter-chip {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    font-family: var(--sans);
+  }
+  .filter-chip:hover { border-color: var(--accent2); color: var(--accent2); }
+  .filter-chip.active { background: var(--accent2); color: #000; border-color: var(--accent2); font-weight: 600; }
+  .filter-chip.wrong-filter.active { background: var(--wrong); border-color: var(--wrong); }
+
+  /* HIDDEN */
+  .hidden { display: none !important; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    header { padding: 16px; }
+    .main { padding: 20px 16px; }
+    .quiz-options { grid-template-columns: 1fr; }
+    .card-answer { font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    政治経済 単語カード
+    <span>5年8組 20番 松永 泰斉</span>
+  </div>
+  <div class="score-badge" id="globalScore">
+    学習済み<br><strong id="masteredCount">0</strong> / <span id="totalCount">0</span>
+  </div>
+</header>
+
+<div class="tabs-wrapper" id="tabsWrapper"></div>
+
+<div class="main">
+  <div id="appRoot"></div>
+</div>
+
+<script>
+/* ============================================================
+   DATA: All 9 tests with questions, answers, wrong flags
+   ============================================================ */
+const TESTS = [
+  {
+    id: "070501",
+    title: "国家の基礎・領域・法の分類",
+    subtitle: "アリストテレス、主権、領海・EEZ、公法・私法",
+    items: [
+      { q: "人間を「政治的（社会的）動物」と表現した人物", a: "アリストテレス", note: "古代ギリシャの哲学者" },
+      { q: "対外的に独立性、国内的に最高性を有する権力\n（国家の三要素のひとつ）", a: "主権", note: "国家の三要素：主権・領域・領民（国民）" },
+      { q: "領土、領海、領空の総称\n（国家の三要素のひとつ）", a: "領域", note: "国家の三要素：主権・領域・領民（国民）" },
+      { q: "『国家論』において主権論を展開した政治思想家\n西暦1530-1596仏", a: "ボダン", note: "フランスの法学者・政治思想家" },
+      { q: "領土の定義：※[　]時に海中に没しない陸地", a: "低潮（干潮）", note: "低潮時＝干潮時" },
+      { q: "領海の基線となる海岸線の時刻は？", a: "低潮（低潮線）", note: "低潮線から12海里" },
+      { q: "領海の範囲：低潮線から周囲[　]海里", a: "12（海里）", note: "国際法上の標準的な領海幅" },
+      { q: "領空の範囲：領土・領海の上空約[　]キロメートル以内", a: "約100（km）", note: "カルマンライン（大気圏の目安）" },
+      { q: "領海の周囲さらに12海里。沿岸国が通関や検疫に関する法律を適用できる水域", a: "接続水域", note: "領海基線から24海里" },
+      { q: "低潮線から周囲200海里。沿岸国に水産・海底資源の独占権あり。英語略称は？", a: "排他的経済水域（EEZ）", note: "Exclusive Economic Zone" },
+      { q: "排他的経済水域の広さ（海里）", a: "200（海里）", note: "" },
+      { q: "排他的経済水域の英語略称", a: "EEZ", note: "Exclusive Economic Zone" },
+      { q: "船舶が他国の領海を安全に通行する権利。測量・軍事行動は不可。領空には存在しない権利", a: "無害通航権", note: "国連海洋法条約で規定" },
+      { q: "国家や地方公共団体や権力について定めた法", a: "公法", note: "憲法・行政法・刑法など" },
+      { q: "国民同士の関係や契約に関する法", a: "私法", note: "民法・商法など" },
+      { q: "国家が国民の平等を実現するための社会福祉や労働に関する法", a: "社会法", note: "労働基準法・社会保障法など" },
+    ]
+  },
+  {
+    id: "070502",
+    title: "絶対王政と社会契約論（ホッブズ）",
+    subtitle: "絶対王政・王権神授説・社会契約論・ホッブズ",
+    wrongNums: [2],
+    items: [
+      { q: "財政・軍事力において貴族を圧倒した国王が専制政治を行った状態", a: "絶対王政", note: "16〜18世紀のヨーロッパで発達" },
+      { q: "国王の権力の源泉を神に求める考え\n※フィルマー『家父長論』（1588-1653英）", a: "王権神授説", note: "★未記入だった問題", wrong: true },
+      { q: "貴族（領主）でも農民でもない新興富裕層（商人・資本家）。ブルジョワジーとも", a: "市民階級", note: "" },
+      { q: "国家は、人民が契約を結んだことにより成立したとする説", a: "社会契約論", note: "ホッブズ・ロック・ルソーが代表的論者" },
+      { q: "初めて社会契約論を唱えた人物。清教徒革命を批判（絶対王政を擁護）。西暦1588-1679英", a: "ホッブズ", note: "" },
+      { q: "ホッブズの著書。人民が権利を国王に譲渡。「万人の万人に対する闘争」", a: "リヴァイアサン", note: "1651年刊" },
+      { q: "社会契約論において仮想される、国家成立以前の状態", a: "自然状態", note: "ホッブズ：「万人の万人に対する闘争」の状態" },
+      { q: "国家成立以前といえども認められる人間の権利", a: "自然権", note: "" },
+      { q: "国家成立以前といえども人間が守らなければならないと考えられた法", a: "自然法", note: "" },
+    ]
+  },
+  {
+    id: "070503",
+    title: "民主主義思想の発展（ロック・ルソー・モンテスキュー）",
+    subtitle: "ロック・ルソー・モンテスキュー・マグナカルタ・人権宣言",
+    items: [
+      { q: "社会契約説を唱えた二番目の人物。名誉革命を肯定。西暦1632-1704英", a: "ロック", note: "" },
+      { q: "ロックの著書。『市民政府（政治）二論』とも。王権の制限を主張。ホッブズを批判", a: "統治二論", note: "1689年刊" },
+      { q: "ロックの思想：人民が信託した権利を擁護しない政府に従う義務はないという考え", a: "抵抗権", note: "" },
+      { q: "ロックの思想：人民が信託した権利を擁護しない政府は改変してよいという考え", a: "革命権", note: "" },
+      { q: "社会契約説を唱えた三番目の人物。フランス革命に影響。西暦1712-1778仏。主著『社会契約論』。直接民主制を主張", a: "ルソー", note: "" },
+      { q: "ルソーの思想：国民が従うべき意思。個別意思の集合体たる全体意思とは異なる", a: "一般意思", note: "" },
+      { q: "ジョン王が議会に対し広範な同意権を認めた重要法。西暦1215", a: "マグナカルタ", note: "大憲章ともいう" },
+      { q: "王権の有限性を説いた人物。「国王といえども神と法の下にある」。西暦?-1268英", a: "ブラクトン", note: "イギリスの法学者" },
+      { q: "ブラクトンの言葉を引用し、ジェームズ一世をいさめた人物。西暦1552-1634英", a: "エドワード・コーク", note: "コモン・ロー（慣習法）の守護者" },
+      { q: "人権が侵害されぬよう権力を分割する仕組み。ロックが提唱し、モンテスキューが改良", a: "権力分立の原理", note: "" },
+      { q: "三権分立論を展開した啓蒙思想家。西暦1689-1755仏", a: "モンテスキュー", note: "" },
+      { q: "モンテスキューの著書。立法・行法（行政）・司法の三権分立を規定", a: "法の精神", note: "1748年刊" },
+      { q: "米独立戦争中に発布された人権文書。西暦1776。直後にヴァージニア憲法発布", a: "ヴァージニア権利章典", note: "" },
+      { q: "米独立戦争中に発布された宣言。西暦1776", a: "アメリカ独立宣言", note: "" },
+      { q: "世界最古の成文憲法。最も厳格な三権分立を規定。西暦1787発効", a: "アメリカ合衆国憲法", note: "" },
+      { q: "人及び市民の権利宣言とも。仏革命後の立憲君主制を規定する文書。西暦1789", a: "人権宣言", note: "フランス人権宣言" },
+      { q: "一つの文書としてまとめられた憲法。不文憲法（イギリス憲法）と対比される", a: "成文憲法", note: "" },
+      { q: "統治は国民の権利を守る法律によってなされなければならないとする原則", a: "法の支配", note: "英米法系の原則" },
+      { q: "統治は法に基づいて行われるという考え。形式主義として用いられることもある", a: "法治主義", note: "大陸法系の原則" },
+      { q: "国民の代表者が国民を統治する政治体制。代議制、代表民主制とも", a: "代議制", note: "" },
+    ]
+  },
+  {
+    id: "070504",
+    title: "各国の政治制度（英・米・仏・中）",
+    subtitle: "議院内閣制・大統領制・中国の政治・開発独裁",
+    items: [
+      { q: "イギリスで創始された政治制度。立法府の多数派が首相を輩出", a: "議院内閣制", note: "" },
+      { q: "法律や行政府の命令が憲法に合致するかを司法府が判断する権利。英国にはない", a: "違憲法令審査権", note: "違憲立法審査権とも" },
+      { q: "イギリスにおいて最大野党が政権交代に備えて組織する公式な組織", a: "影の内閣", note: "シャドーキャビネット" },
+      { q: "世襲貴族と一代貴族で構成。2009年の最高裁創設以前は最高裁の機能を保有", a: "上院（貴族院）", note: "英国議会の上院" },
+      { q: "小選挙区選出。第一党の党首が国王により首相に任命（政党内閣制）。※現在は労働党", a: "下院（庶民院）", note: "英国議会の下院" },
+      { q: "英国王の政治に対する姿勢。国政の権限は国王にあるが、実際は各機関が行使", a: "君臨すれども統治せず", note: "立憲君主制の原則" },
+      { q: "アメリカで創始された政治制度。共和制における元首", a: "大統領制", note: "" },
+      { q: "議会出席権を持たない米大統領が連邦議会に対し自身の意向を伝達する文書", a: "教書", note: "" },
+      { q: "米議会の上院：各州2名選出。小選挙区。2年ごと3分の1改選。条約同意権等で優位", a: "上院（元老院）", note: "Senate（セネト）" },
+      { q: "米議会の下院：各州人口比例。小選挙区選出。任期2年。共和・民主の二大政党制", a: "下院（代議院）", note: "House of Representatives" },
+      { q: "議会が制定した法律や編成した予算に対して大統領が署名しない権利", a: "拒否権", note: "大統領制の特徴" },
+      { q: "大統領と首相が行政権を分担する政治体制。フランスは大統領が外交・軍事を担当", a: "半大統領制", note: "フランスの第五共和政" },
+      { q: "野党の存在を認めない非民主的政党政治。中国共産党、朝鮮労働党が有名", a: "一党支配", note: "" },
+      { q: "中国の最高権力機関。国家元首（国家主席）を選出し、全権力の源泉となる機関", a: "全国人民代表大会", note: "中国版「議会」" },
+      { q: "中国の国家元首。全国人民代表大会が選出", a: "国家主席", note: "" },
+      { q: "中国において全権力が由来するとされる機関（全人代）", a: "全国人民代表大会", note: "略称：全人代" },
+      { q: "中国の行政府の長。首相に当たる役職", a: "総理（国務院総理）", note: "" },
+      { q: "国民の支持を得るため、先進国からの援助を原資として経済成長を図る独裁政権", a: "開発独裁", note: "東南アジアに多い" },
+      { q: "西暦2010年から2011年にかけて起きた民主化運動の総称。エジプト・リビアの政権崩壊", a: "アラブの春", note: "" },
+      { q: "アラブの春が最初に起きた国", a: "チュニジア", note: "ジャスミン革命" },
+    ]
+  },
+  {
+    id: "070505",
+    title: "日本国憲法の成立",
+    subtitle: "治安維持法・大正デモクラシー・GHQ・三大原理・改憲",
+    wrongNums: [1,4,7,8,9,10,17],
+    items: [
+      { q: "国体の変革・私有財産制度の否認を禁止した法律。大正14年制定。普選法と同時", a: "治安維持法", note: "★未記入だった問題", wrong: true },
+      { q: "民間による憲法案。東洋大日本国国憲按や五日市憲法草案が知られる", a: "私擬憲法", note: "明治時代の民間草案" },
+      { q: "帝国憲法中の、帝国議会の協賛や国務各大臣の輔弼を要しない天皇の権限", a: "天皇の大権", note: "" },
+      { q: "帝国憲法中の、軍の統帥権は他の行政事項と異なり天皇の大権であるとする規定", a: "統帥権の独立", note: "★未記入だった問題。軍部の暴走につながった", wrong: true },
+      { q: "大正時代、政党内閣が一般化して、民主主義的風潮が見られたこと", a: "大正デモクラシー", note: "" },
+      { q: "資産や所得による制限なく、一定年齢に達すると選挙権が得られる制度", a: "普通選挙", note: "1925年：男子普通選挙実現" },
+      { q: "終戦直後に発足した内閣", a: "東久邇宮内閣", note: "★未記入だった問題", wrong: true },
+      { q: "幣原喜重郎内閣の国務大臣で憲法問題調査委員会の委員長", a: "松本烝治", note: "★未記入だった問題", wrong: true },
+      { q: "松本烝治が委員長を務めた、憲法改正を検討する機関", a: "憲法問題調査委員会", note: "★未記入だった問題。松本委員会とも", wrong: true },
+      { q: "マッカーサーが示した帝国憲法改正の指針", a: "マッカーサー三原則（マッカーサーノート）", note: "★未記入だった問題。①天皇象徴、②戦争放棄、③封建制廃止", wrong: true },
+      { q: "日本国憲法の三大原理のひとつ（国民が政治の主権者）", a: "国民主権", note: "三大原理：国民主権・基本的人権の尊重・平和主義" },
+      { q: "日本国憲法の三大原理のひとつ（人権の保障）", a: "基本的人権の尊重", note: "三大原理：国民主権・基本的人権の尊重・平和主義" },
+      { q: "普通の法律よりも改正手続が厳しい憲法。日本国憲法はこれにあたる", a: "硬性憲法", note: "↔ 軟性憲法" },
+      { q: "普通の法律と同じ手続で改正できる憲法。イギリス憲法がこれにあたる", a: "軟性憲法", note: "↔ 硬性憲法" },
+      { q: "「国民投票法」の政府公式略称。日本国憲法の改正手続に関する法律", a: "憲法改正国民投票法", note: "2007年制定" },
+      { q: "日本国憲法第99条の規定。公務員等に課せられた義務", a: "憲法尊重擁護の義務", note: "天皇・国会議員・裁判官・公務員など" },
+      { q: "日本国憲法第98条の規定。憲法が他の法律に優越すること", a: "最高法規性", note: "★未記入だった問題", wrong: true },
+      { q: "憲法の条文を変えないまま、条文の文言の解釈を変更すること", a: "解釈改憲", note: "" },
+      { q: "平成12年、衆参両院にそれぞれ設置された、憲法議論を行うための機関", a: "憲法調査会", note: "" },
+      { q: "平成19年、衆参両院にそれぞれ設置された、憲法改正議論を行うための機関", a: "憲法審査会", note: "" },
+    ]
+  },
+  {
+    id: "070506",
+    title: "自由権・刑事手続き上の権利",
+    subtitle: "罪刑法定主義・令状主義・黙秘権・少年法",
+    wrongNums: [8],
+    items: [
+      { q: "近代市民革命で最重視された、国家から干渉されない権利。国家からの自由。十九世紀的基本権", a: "自由権", note: "" },
+      { q: "不当に拘束されたり、刑罰を科せられたりしない権利", a: "人身の自由", note: "自由権のうちの身体的自由" },
+      { q: "犯罪と刑罰はあらかじめ法律に規定されていなければならないとする刑法の原則", a: "罪刑法定主義", note: "" },
+      { q: "逮捕や捜索に際し裁判官が発行する令状が必要だとする規定。現行犯は例外", a: "令状主義", note: "憲法33・35条" },
+      { q: "刑事事件は弁護人をつけなければ審理を進められないとする原則の別の表現", a: "弁護人依頼権", note: "憲法37条" },
+      { q: "一度判決が出た刑事事件を再度提起できないとする裁判の原則", a: "一事不再理", note: "憲法39条。二重の危険の禁止とも" },
+      { q: "容疑者や被告人が自己に不利益な供述をしない権利。※刑罰が重くなる可能性", a: "黙秘権", note: "憲法38条" },
+      { q: "実行時に適法であった行為を後からできた法律で処罰できないとする刑法の原則", a: "遡及処罰の禁止", note: "★誤答（×二重処罰）→ 正しくは「遡及処罰の禁止」（事後法の禁止）", wrong: true },
+      { q: "犯罪者でない者を犯罪者扱いすること", a: "冤罪", note: "" },
+      { q: "一度終結した刑事訴訟を、新事実発覚などによりやり直すこと", a: "再審", note: "" },
+      { q: "未成年者に刑法をそのまま適用しないための法律。成人年齢引き下げ以降迷走", a: "少年法", note: "" },
+      { q: "犯罪被害者の意向を刑事訴訟に反映させるための法律", a: "犯罪被害者等基本法", note: "2004年制定" },
+    ]
+  },
+  {
+    id: "070507",
+    title: "自由権に関する主要訴訟",
+    subtitle: "薬事法・森林法・三菱樹脂・津地鎮祭・空知太神社",
+    items: [
+      { q: "基本的人権のうち、公共の福祉による制限を受けると憲法に明記されているもの", a: "職業選択の自由", note: "憲法22条" },
+      { q: "職業選択の自由が争われ、違憲立法審査権が行使された訴訟", a: "薬事法違憲訴訟", note: "最高裁1975年。薬局の距離制限が違憲" },
+      { q: "財産権が争われ、違憲立法審査権が行使された訴訟", a: "森林法事件", note: "最高裁1987年。共有林の分割制限が違憲" },
+      { q: "思想・良心の自由が私人間に適用されるかが争われた民事訴訟", a: "三菱樹脂訴訟", note: "最高裁1973年。企業の採用拒否事件" },
+      { q: "日本国憲法第20条に定められた権利。強制されない権利も含む", a: "信教の自由", note: "政教分離原則も含む" },
+      { q: "地鎮祭は日本国憲法第20条の禁止する宗教行事には当たらないと判決された訴訟", a: "津地鎮祭訴訟", note: "最高裁1977年。市の費用で地鎮祭実施" },
+      { q: "県知事の公金支出が日本国憲法第20条違反であると最高裁が判決した訴訟", a: "愛媛玉ぐし料訴訟", note: "最高裁1997年。靖国神社への玉ぐし料が違憲" },
+      { q: "町内の集会所建設のため無償貸与した公有地に神社が建立後も無償貸与を続けたことが憲法第20条違反と判決された訴訟", a: "空知太神社訴訟", note: "最高裁2010年。政教分離違反" },
+    ]
+  },
+  {
+    id: "070508",
+    title: "平等権・国籍法・積極的差別是正",
+    subtitle: "天皇機関説事件・国籍法・アファーマティブアクション",
+    items: [
+      { q: "東京帝国大学美濃部達吉教授が貴族院議員辞職に追い込まれた事件", a: "天皇機関説事件", note: "1935年。国家主権説に押される" },
+      { q: "子が日本国籍を取得できる要件を定めた法律。父系主義から父母両系主義へ", a: "国籍法", note: "" },
+      { q: "日本人父の認知した外国人母の子が国籍取得できなかったことへの違憲立法審査権行使の訴訟", a: "国籍法違憲訴訟", note: "最高裁2008年。国籍法3条1項が違憲" },
+      { q: "積極的差別是正措置。ポジティブアクション。賛否両論あり、やり過ぎると逆差別になる", a: "積極的差別是正措置（アファーマティブアクション）", note: "" },
+      { q: "育児休業法を改正した法律。男女問わず、休業が申請できる", a: "育児・介護休業法", note: "" },
+    ]
+  },
+  {
+    id: "070509",
+    title: "社会権・新しい人権",
+    subtitle: "ワイマール憲法・朝日訴訟・プライバシー・知る権利",
+    items: [
+      { q: "社会的弱者が国家に救済される権利。国家への自由。二十世紀的基本権", a: "社会権", note: "" },
+      { q: "第一次世界大戦後、史上初めて社会権を規定した憲法。西暦1919独", a: "ワイマール憲法", note: "ドイツで制定。世界初の社会権規定" },
+      { q: "社会権が広範に認められた国家。第一次大戦後、特に世界恐慌後先進国に広まる", a: "福祉国家", note: "" },
+      { q: "生活保護が健康で文化的な最低限度の生活を保障するのに十分か争われた訴訟", a: "朝日訴訟", note: "1957年提起。生存権のリーディングケース" },
+      { q: "憲法に定められた権利は具体的権利ではなく訴訟の対象にはならないとする考え", a: "プログラム規定説", note: "朝日訴訟・堀木訴訟で採用" },
+      { q: "障害福祉年金と児童扶養手当の併給禁止が争われ、併給禁止が確定した訴訟", a: "堀木訴訟", note: "最高裁1982年。立法裁量を広く認める" },
+      { q: "日本国憲法第27条の勤労権と第28条の団結権・団体交渉権・団体行動権の総称", a: "労働基本権", note: "勤労三権とも" },
+      { q: "刑事補償請求権と国家賠償請求権の総称", a: "請求権", note: "" },
+      { q: "日本国憲法第13条で規定される基本的人権", a: "幸福追求権", note: "新しい人権の根拠条文" },
+      { q: "日本国憲法に明文規定がないものの基本的人権と主張されるもの", a: "新しい人権", note: "プライバシー・知る権利・環境権など" },
+      { q: "私生活をみだりに公開されない権利から、自己に関する情報をコントロールする権利に変化した権利", a: "プライバシーの権利", note: "情報化社会に対応して概念が拡大" },
+      { q: "行政府が持っている情報を公開する情報公開法の前提となっていない権利", a: "知る権利", note: "情報公開法の前提となっている、ではなく「なっていない」権利" },
+      { q: "大規模工事に際し影響を調査し評価しなければならないことを定めた法律", a: "環境影響評価法", note: "環境アセスメント法（1997年制定）" },
+    ]
+  }
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let currentTest = 0;
+let mode = 'flash'; // flash | quiz | wrong
+let quizState = null;
+let mastered = JSON.parse(localStorage.getItem('pol_mastered') || '{}');
+
+function saveMastered() {
+  localStorage.setItem('pol_mastered', JSON.stringify(mastered));
+}
+
+function totalCount() {
+  return TESTS.reduce((s, t) => s + t.items.length, 0);
+}
+function masteredCount() {
+  return Object.values(mastered).filter(v => v).length;
+}
+
+/* ============================================================
+   RENDER TABS
+   ============================================================ */
+function renderTabs() {
+  const wrap = document.getElementById('tabsWrapper');
+  const tabAll = `<button class="tab ${currentTest === -1 ? 'active' : ''}" data-idx="-1">全テスト</button>`;
+  const tabs = TESTS.map((t, i) => {
+    const hasWrong = t.wrongNums && t.wrongNums.length > 0;
+    return `<button class="tab ${currentTest === i ? 'active' : ''}" data-idx="${i}">
+      ${t.id}${hasWrong ? '<span class="wrong-dot"></span>' : ''}
+    </button>`;
+  }).join('');
+  wrap.innerHTML = tabAll + tabs;
+  wrap.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentTest = parseInt(btn.dataset.idx);
+      mode = 'flash';
+      render();
+    });
+  });
+}
+
+/* ============================================================
+   GET CURRENT ITEMS
+   ============================================================ */
+function getCurrentItems() {
+  if (currentTest === -1) {
+    return TESTS.flatMap((t, ti) => t.items.map((item, ii) => ({...item, testId: t.id, globalIdx: `${ti}_${ii}`})));
+  }
+  const t = TESTS[currentTest];
+  return t.items.map((item, ii) => ({...item, testId: t.id, globalIdx: `${currentTest}_${ii}`}));
+}
+
+function getWrongItems() {
+  if (currentTest === -1) {
+    return TESTS.flatMap((t, ti) => t.items.filter(item => item.wrong).map((item, ii) => ({...item, testId: t.id, globalIdx: `${ti}_${ii}`})));
+  }
+  return TESTS[currentTest].items.filter(i => i.wrong).map((item, ii) => ({...item, testId: TESTS[currentTest].id, globalIdx: `${currentTest}_${ii}`}));
+}
+
+/* ============================================================
+   FLASHCARD RENDER
+   ============================================================ */
+function renderFlash(items) {
+  const flipped = {};
+  
+  const html = items.map((item, idx) => {
+    const key = item.globalIdx || idx;
+    const isMastered = mastered[key];
+    const isWrong = item.wrong;
+    const ansLen = item.a.length;
+    const ansClass = ansLen > 15 ? (ansLen > 25 ? 'xsmall' : 'small') : '';
+    const qLen = item.q.length;
+    const tall = qLen > 60;
+    
+    return `<div class="flashcard ${tall ? 'tall' : ''}" data-key="${key}" data-idx="${idx}">
+      <div class="card-inner">
+        <div class="card-face card-front" style="${isMastered ? 'opacity:0.5;' : ''}">
+          ${isWrong ? '<span class="wrong-badge">要注意</span>' : ''}
+          <div class="card-num">${(idx+1).toString().padStart(2,'0')}</div>
+          <div>
+            <div class="card-question">${item.q.replace(/\n/g, '<br>')}</div>
+            ${item.note && item.note.startsWith('★') ? '' : (item.note ? `<div class="card-hint">${item.note}</div>` : '')}
+          </div>
+          <div class="card-flip-hint">タップで答え</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-answer-wrap">
+            <div class="card-answer ${ansClass}">${item.a}</div>
+            ${item.note ? `<div class="card-hint" style="color:var(--accent2);margin-top:8px;">${item.note}</div>` : ''}
+          </div>
+          <div class="card-flip-hint" style="color:var(--accent2)">もう一度</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return html;
+}
+
+/* ============================================================
+   QUIZ RENDER
+   ============================================================ */
+function startQuiz(items) {
+  const shuffled = [...items].sort(() => Math.random() - 0.5);
+  quizState = {
+    items: shuffled,
+    idx: 0,
+    score: 0,
+    answered: false
+  };
+  renderQuizQuestion();
+}
+
+function getDistractors(correct, allItems, count=3) {
+  const others = allItems.filter(i => i.a !== correct).map(i => i.a);
+  const shuffled = others.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+function renderQuizQuestion() {
+  const root = document.getElementById('quizArea');
+  if (!root) return;
+  const {items, idx} = quizState;
+  
+  if (idx >= items.length) {
+    const pct = Math.round(quizState.score / items.length * 100);
+    root.innerHTML = `<div class="quiz-result">
+      <div class="result-score">${pct}<span style="font-size:2rem">%</span></div>
+      <div class="result-label">クイズ結果</div>
+      <div class="result-sub">${items.length}問中 ${quizState.score}問正解</div>
+      <button class="result-retry" onclick="startQuiz(getCurrentItems())">もう一度</button>
+    </div>`;
+    return;
+  }
+  
+  const item = items[idx];
+  const allItems = getCurrentItems();
+  const distractors = getDistractors(item.a, allItems, 3);
+  const opts = [...distractors, item.a].sort(() => Math.random() - 0.5);
+  const pct = Math.round(idx / items.length * 100);
+  
+  root.innerHTML = `
+    <div class="quiz-progress">
+      <span>${idx + 1} / ${items.length}</span>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <span>✓ ${quizState.score}</span>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-q-num">${(idx+1).toString().padStart(2,'0')}</div>
+      <div class="quiz-question">${item.q.replace(/\n/g, '<br>')}</div>
+      <div class="quiz-options" id="quizOpts">
+        ${opts.map(o => `<button class="quiz-opt" data-answer="${o}">${o}</button>`).join('')}
+      </div>
+      <button class="quiz-next-btn" id="quizNext" onclick="quizNext()">次の問題 →</button>
+    </div>`;
+  
+  root.querySelectorAll('.quiz-opt').forEach(btn => {
+    btn.addEventListener('click', function() {
+      if (quizState.answered) return;
+      quizState.answered = true;
+      const chosen = this.dataset.answer;
+      const isCorrect = chosen === item.a;
+      if (isCorrect) quizState.score++;
+      
+      root.querySelectorAll('.quiz-opt').forEach(b => {
+        if (b.dataset.answer === item.a) b.classList.add('correct');
+        else if (b.dataset.answer === chosen && !isCorrect) b.classList.add('wrong');
+        else b.classList.add('disabled');
+      });
+      
+      const nextBtn = document.getElementById('quizNext');
+      if (nextBtn) nextBtn.classList.add('visible');
+    });
+  });
+}
+
+function quizNext() {
+  quizState.idx++;
+  quizState.answered = false;
+  renderQuizQuestion();
+}
+
+/* ============================================================
+   MAIN RENDER
+   ============================================================ */
+function render() {
+  renderTabs();
+  
+  const root = document.getElementById('appRoot');
+  const test = currentTest >= 0 ? TESTS[currentTest] : null;
+  const title = test ? test.title : '全テスト一覧';
+  const subtitle = test ? test.subtitle : `全${TESTS.length}テスト・${totalCount()}問`;
+  const wrongItems = getWrongItems();
+  const items = getCurrentItems();
+  
+  document.getElementById('masteredCount').textContent = masteredCount();
+  document.getElementById('totalCount').textContent = totalCount();
+  
+  const wrongCountBadge = wrongItems.length > 0 
+    ? `<span class="wrong-count">要注意 ${wrongItems.length}問</span>` : '';
+  
+  root.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">${title}${wrongCountBadge}</div>
+      <div class="section-meta">${subtitle}</div>
+    </div>
+    <div class="mode-bar">
+      <button class="mode-btn ${mode==='flash'?'active':''}" onclick="setMode('flash')">📇 単語カード</button>
+      <button class="mode-btn ${mode==='quiz'?'active':''}" onclick="setMode('quiz')">🎯 クイズ</button>
+      ${wrongItems.length > 0 ? `<button class="mode-btn ${mode==='wrong'?'active danger':''}" onclick="setMode('wrong')">⚠️ 要注意問題のみ</button>` : ''}
+      <button class="mode-btn" onclick="resetMastered()" style="margin-left:auto">🔄 リセット</button>
+    </div>
+    
+    ${mode === 'flash' ? `
+      <div class="filter-bar">
+        <span class="filter-label">フィルター：</span>
+        <button class="filter-chip active" id="filterAll" onclick="filterCards('all')">全て（${items.length}）</button>
+        <button class="filter-chip" id="filterUn" onclick="filterCards('unlearned')">未習得</button>
+        <button class="filter-chip" id="filterDone" onclick="filterCards('learned')">習得済み</button>
+      </div>
+      <div class="cards-grid" id="cardsGrid">
+        ${renderFlash(items)}
+      </div>
+    ` : mode === 'quiz' ? `
+      <div id="quizArea"></div>
+    ` : `
+      <div style="margin-bottom:16px;padding:14px 18px;background:rgba(248,81,73,0.08);border:1px solid rgba(248,81,73,0.3);border-radius:10px;font-size:0.85rem;color:var(--wrong);">
+        ⚠️ <strong>要注意問題</strong>：未記入・誤答だった問題をまとめました。重点的に練習しましょう。
+      </div>
+      <div class="cards-grid" id="cardsGrid">
+        ${renderFlash(wrongItems)}
+      </div>
+    `}
+  `;
+  
+  if (mode === 'quiz') {
+    startQuiz(items);
+  }
+  
+  // Attach flashcard click events
+  if (mode === 'flash' || mode === 'wrong') {
+    document.querySelectorAll('.flashcard').forEach(card => {
+      card.addEventListener('click', function() {
+        this.classList.toggle('flipped');
+        const key = this.dataset.key;
+        if (this.classList.contains('flipped')) {
+          mastered[key] = true;
+          saveMastered();
+          document.getElementById('masteredCount').textContent = masteredCount();
+        }
+      });
+    });
+  }
+}
+
+function setMode(m) {
+  mode = m;
+  render();
+}
+
+function filterCards(type) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  const items = getCurrentItems();
+  
+  document.querySelectorAll('.flashcard').forEach(card => {
+    const key = card.dataset.key;
+    if (type === 'all') card.style.display = '';
+    else if (type === 'learned') card.style.display = mastered[key] ? '' : 'none';
+    else if (type === 'unlearned') card.style.display = (!mastered[key]) ? '' : 'none';
+  });
+  
+  const map = { all: '#filterAll', unlearned: '#filterUn', learned: '#filterDone' };
+  const el = document.querySelector(map[type]);
+  if (el) el.classList.add('active');
+}
+
+function resetMastered() {
+  if (confirm('習得済みの記録をリセットしますか？')) {
+    mastered = {};
+    saveMastered();
+    render();
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+render();
+</script>
+</body>
+</html>
